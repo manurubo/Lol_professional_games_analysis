@@ -26,14 +26,9 @@ require(ggplot2)
 options(tinytex.verbose = TRUE)
 ```
 
-Ideas: 
-* Contraste de asesinatos/oro entre equipo ganador y perdedor. 
-* Correlación de variables de equipos/jugadores con la victoria. 
-* Regresión logística ganar
-* Proporción de dragones que se lleva cada equipo es la misma (lado rojo/azul)
-* Relación entre primera sangre y equipo ganador
-
 # 1. Descripción del dataset.
+
+(AÑADIR DESCRIPCION INICIAL)
 
 ```{r,eval=TRUE,echo=TRUE}
 # Tenemos que tener el fichero en el mismo directorio que el codigo.
@@ -530,7 +525,9 @@ El proceso de analizar los datos no se puede dividir en fases concretas, ya que 
 
 * Análisis de correlación de las variables con la variable objetivo 'gana'. Este análisis estadístico lo realizo en la fase de selección para selección un dataset reducido que usar más adelante. 
 * Aplicación de un análisis estadístico descriptivo de las variables. 
+* Realización de un contraste de probabilidades.
 * Realización de un contraste de hipótesis entre dos grupos, que se definirá posteriormente entre que variables en función de las variables seleccionadas y el estudio de la normalidad y la homocedasticidad. 
+* Realización de un contraste de hipótesis entre más de dos grupos.
 * Desarrollo de un modelo de regresión logística para predecir el ganador de una partida. 
 
 ## 4.1 Selección de los grupos de datos que se quieren analizar/comparar.
@@ -745,7 +742,13 @@ Por otra parte, el resto de variables no tienen una distribución normal, pero h
 
 Hay que recordar que la primera prueba estadística ya la hemos realizado en la selección de atributos con el objetivo de reducir la dimensionalidad mediante la identificación de la correlación de las diferentes variables con la variable objetivo. 
 
-COMENTAR QUE PRUEBAS HACEMOS
+Las pruebas a realizar son: 
+* Análisis estadístico descriptivo.
+* Contraste de proporción de victoria del azul es superior al rojo.
+* Contraste de que el daño a objetivos por parte del equipo azul es superior cuando gana a cuando pierde.
+* Contraste de si la diferencia de experiencia en el minuto 15 es igual independientemente de si gana o pierde el equipo azul. 
+* Contraste de diferencia de KDA entre posiciones para el equipo ganador.
+
 
 ### 4.3.1 Análisis estadístico descriptivo. 
 
@@ -757,7 +760,7 @@ Para realizar este análisis y no abrumarnos, vamos a ir comparando las variable
 
 Debido a que la variable gana_azul es la variable objetivo la introduzco en el análisis de los objetivos. Además así la podemos tener presente en todos los análisis para describir comportamientos. 
 
-```{r,eval=TRUE,echo=TRUE}
+```{r,eval=TRUE,echo=TRUE, fig.height=3, fig.width=8}
 
 # Plot del histograma
 plot_hist<-function(x)
@@ -810,7 +813,7 @@ Respecto al resto de variables:
 #### 4.3.1.2 Descripción de los KDA
 
 
-```{r,eval=TRUE,echo=TRUE}
+```{r,eval=TRUE,echo=TRUE, fig.height=3, fig.width=8}
 
 
 
@@ -833,7 +836,7 @@ Para los KDA podemos comentar:
 #### 4.3.1.3 Descripción de los asesinatos
 
 
-```{r,eval=TRUE,echo=TRUE}
+```{r,eval=TRUE,echo=TRUE, fig.height=3, fig.width=8}
 
 
 vars <- c('num_asesinatos_azul', 'num_asesinatos_rojo', 'double_k_azul','double_k_rojo')
@@ -861,7 +864,7 @@ invisible(sapply(vars,plot_hist))
 #### 4.3.1.4 Descripción de los monstruos de la jungla
 
 
-```{r,eval=TRUE,echo=TRUE}
+```{r,eval=TRUE,echo=TRUE, fig.height=3, fig.width=8}
 
 
 vars <- c('num_dragones_azul', 'num_dragones_rojo', 'num_nashors_azul','num_nashors_rojo')
@@ -887,7 +890,7 @@ invisible(sapply(vars,plot_hist))
 #### 4.3.1.3 Descripción del oro y experiencia
 
 
-```{r,eval=TRUE,echo=TRUE}
+```{r,eval=TRUE,echo=TRUE, fig.height=3, fig.width=8}
 
 colnames(lol_imputed_onehot)
 
@@ -911,11 +914,7 @@ invisible(sapply(vars,plot_hist))
 
 ### 4.3.2 Contraste de hipótesis
 
-Ideas:
-
-Por otra parte se puede reformatear dataset y buscar el KDA de MID para el equipo que gana (azul si gana azul, rojo si gana rojo) generando la variable kda del mid ganador. Contrastar si cuando un equipo gana su KDA es superior. 
-Contrastar si el KDA de los mid y los adc son diferentes. 
-Contrastar con equipos
+A continuación realizo varias pruebas de contraste de hipótesis: 
 
 #### 4.3.2.1 Contraste de proporción de victoria del azul es superior al rojo
 
@@ -961,7 +960,7 @@ t.test(gana$diferencia_exp, pierde$diferencia_exp, alternative = "two.sided")
 ```
 
 
-#### 4.3.2.4 Comprobación de diferencia de KDA entre posiciones (para el equipo ganador?)
+#### 4.3.2.4 Contraste de diferencia de KDA entre posiciones para el equipo ganador.
 
 ```{r,eval=TRUE,echo=TRUE}
 
@@ -1021,9 +1020,7 @@ kruskal.test(kda ~ posicion, data = todos_kdas)
 pairwise.wilcox.test(x = todos_kdas$kda, g = todos_kdas$posicion,p.adjust.method = "holm" )
 ```
 
-### 4.3.3 Regresión logística.
-
-
+### 4.3.3 Regresión logística para predecir que equipo gana.
 
 ```{r,eval=TRUE,echo=TRUE}
 require(caret)
@@ -1079,6 +1076,8 @@ print(paste0("El area bajo la curva ROC es de ", auc))
 
 
 ```
+
+#### 4.3.3.1 Regresión logística para identificar los factores que influyen en la victoria de un equipo.
 
 ```{r,eval=TRUE,echo=TRUE}
 
@@ -1139,6 +1138,11 @@ auc <- auc@y.values[[1]]
 print(paste0("El area bajo la curva ROC es de ", auc))
 
 ```
+
+
+# 5. Representación de los resultados a partir de tablas y gráficas. 
+
+Es importante destacar que los gráficos para las variables del dataset final, que hacen referencia a la distribución de la variables y que son útiles para el análisis estadístico descriptivo ya se han realizado en el punto 4. A continuación desarrollo los gráficos para el resto de puntos. 
 
 
 
