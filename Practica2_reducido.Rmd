@@ -743,6 +743,7 @@ Por otra parte, el resto de variables no tienen una distribución normal, pero h
 Hay que recordar que la primera prueba estadística ya la hemos realizado en la selección de atributos con el objetivo de reducir la dimensionalidad mediante la identificación de la correlación de las diferentes variables con la variable objetivo. 
 
 Las pruebas a realizar son: 
+
 * Análisis estadístico descriptivo.
 * Contraste de proporción de victoria del azul es superior al rojo.
 * Contraste de que el daño a objetivos por parte del equipo azul es superior cuando gana a cuando pierde.
@@ -918,20 +919,38 @@ A continuación realizo varias pruebas de contraste de hipótesis:
 
 #### 4.3.2.1 Contraste de proporción de victoria del azul es superior al rojo
 
+Ya hemos visto que el equipo azul parece que tiene una cierta ventaja, puesto que este equipo ha ganado más que el equipo rojo. Por tanto puede ser interesante estudiar si la diferencia en la variable gana_azul es significativa o no. 
+
+Voy a utilizar **un contraste de hipótesis sobre la proporción de victoria en la variable gana_azul**. Las variables binarias, al estudiar su proporción, siguen una distribución de Bernoulli de parametro p, sobre la que quiero hacer un contraste. Cuando la n es grande, sobretodo n>30, esta distribución de Bernoulli, se puede aproximar, mediante las probabilidades a una distribución normal, por esto podemos aplicar los conceptos de la normal z. El contraste es unilateral, puesto que quiero comprobar si la proporcion de victoria del equipo azul es superior a la proporción de victoria del equipo rojo, sino es inferior o igual.
+
+Por tanto, las hipótesis de este contraste son:
+
+$H_{0} : p_{gana_azul} = p_{gana_rojo}$ -> $p_{gana_azul} = 1/2$   
+$H_{1} : p_{gana_azul} > p_{gana_rojo}$ -> $p_{gana_azul} > 1/2$
+
 ```{r,eval=TRUE,echo=TRUE}
 
-# esto para contraste de hipotesis, usa lo de bernouilly de estadistica avanzada
+
 prop.test( table(lol_imputed_onehot$gana_azul), conf.level=0.95, alternative = 'greater')
+
+
 
 ```
 
+El p-valor es 0.1379, por lo que rechazamos la hipótesis alternativa y no podemos rechazar la hipótesis nula. **De esta manera se concluye que la proporción de victoria del equipo azul no es superior a la proporción de victoria del equipo rojo con un 95% de confianza.**
+De hecho, vemos que el intervalo de confianza es de 0.4888 hasta 1, solo si fuera de más de 0.5 hasta 1, podríamos decir que la proporción de victoria del equipo azul es superior. 
+
+Por tanto, a pesar de que en nuestro dataset hay más victorias del equipo azul, no podemos asegurar que el equipo azul tiene una ventaja solo por ser lado azul. 
+
 #### 4.3.2.2 Comprobación de que el daño a objetivos por parte del equipo azul es superior cuando gana a cuando pierde. 
 
-Ya hemos realizado las pruebas de normalidad y de homocedasticidad. Para esta variable, ya hemos comprobado que su distribución no es normal (mediante la prueba de Saphiro-Wilk), sino que al estudiar su histograma hemos visto que la distribución es bimodal. Por otra parte, hemos visto mediante el test de fligner que su varianza en función del grupo de gana_azul es igual entre los grupos. 
+Una vez que ya hemos estudiado la diferencia entre victorias, podemos pasar a estudiar aspectos de la partida en función de si un equipo o otro gana. En este caso **vamos a estudiar un contraste de hipótesis sobre la variable DamageObjectives_azul en función de los grupos de gana_azul.**
 
-Por tanto, ahora podemos aplicar el test no paramétrico Wilcoxon y comprobar si la distribución de daño a objetivos por parte del equipo azul en función del grupo es la misma o no. Además, como la distribución de varianza es la misma, si la distribución de un grupo es mayor, su mediana será mayor. 
+Ya hemos realizado las pruebas de normalidad y de homocedasticidad. Para esta variable, ya hemos comprobado que su distribución no es normal (mediante la prueba de Saphiro-Wilk), de hecho, al estudiar su histograma hemos visto que la distribución es bimodal. Por otra parte, hemos visto mediante el test de fligner que su varianza en función del grupo de gana_azul es igual entre los grupos. 
 
-Las hipotesis se fundamentan en estudiar si la posibilidad de que un elemento de una población sea mayor que un elemento de otra población. En caso de que tengamos dos poblaciones iguales, la probabilidad para ambas poblaciones será de 0.5. Por tanto, nosotros queremos comprobar si las posibilidades de que el daño a objetivos por parte del equipo azul cuando gana sean mayores que cuando pierde, o que sean iguales estas posibilidades.
+Por tanto, ahora podemos aplicar el test no paramétrico Wilcoxon y comprobar si la distribución de daño a objetivos por parte del equipo azul en función del ganador es la misma o no. Además, como la distribución de varianza es la misma, si la distribución de un grupo es mayor, su mediana será mayor. 
+
+En el test de Wilcoxon, las hipotesis se fundamentan en estudiar la posibilidad de que un elemento de una población sea mayor que un elemento de otra población. En caso de que tengamos dos poblaciones iguales, la probabilidad para ambas poblaciones será de 0.5. Por tanto, nosotros queremos comprobar si las posibilidades de que el daño a objetivos por parte del equipo azul cuando gana sean mayores que cuando pierde, o que sean iguales estas posibilidades.
 
 $H_{0} : P(x_{i} > y_{i}) = 0.5$    
 $H_{1} : P(x_{i} > y_{i}) > 0.5$ 
@@ -944,23 +963,46 @@ pierde<-lol_imputed_onehot[which(lol_imputed_onehot$gana_azul == 'no'),]
 wilcox.test(gana$DamageObjectives_azul, pierde$DamageObjectives_azul, alternative = "greater", mu = 0,
             paired = FALSE, conf.int = 0.95)
 
+intervalo<-wilcox.test(gana$DamageObjectives_azul, pierde$DamageObjectives_azul, alternative = "greater", mu = 0,paired = FALSE, conf.int = 0.95)$conf.int[1]
+
+
+
 ```
 
-Como vemos, el p-valor es muy muy pequeño, por lo que se rechaza la hipótesis nula y se acepta la hipótesis alternativa. Por tanto, las posibilidades de que el daño a objetivos por parte del equipo azul cuando gana son mayores que cuando pierde. Algo que en realidad, ya sospechabamos al ver la correlación entre las variables. Ahora hemos comprobado que hay significancia estadística. 
+Como vemos, el p-valor es muy muy pequeño, por lo que se rechaza la hipótesis nula y se acepta la hipótesis alternativa. Por tanto, **la distribución del daño del equipo azul a objetivos es superior que la distribución del daño a objetivos del equipo rojo con un 95% de confianza.** Algo que en realidad, ya sospechabamos al ver la correlación entre las variables. Ahora hemos comprobado que hay significancia estadística. 
 
 Esto lo comprobamos más adelante en el apartado 5, al observar la distribución de la variable en función de los grupos que se generan por gana_azul y al ver que las medianas son diferentes. 
 
 #### 4.3.2.3 Comprobación de si la diferencia de experiencia en el minuto 15 es igual independientemente de si gana o pierde el equipo azul. 
 
+Otro aspecto interesante de la partida respecto a quién gana es la diferencia de experiencia. En este caso **vamos a estudiar un contraste de hipótesis sobre la variable diferencia_exp en función de los grupos de gana_azul.**
+
+Ya hemos realizado las pruebas de normalidad y de homocedasticidad. Para esta variable, hemos comprobado mediante el test de Saphiro-Wilk que tiene una distribución normal y mediante el test de Levene que la varianza en función del grupo gana_azul es igual entre los grupos. 
+
+Por tanto, ahora podemos aplicar el t test para estudiar si la media de diferencia de experiencia para un grupo es la misma que la media de diferencia de experiencia para el otro grupo.
+En caso de que sean iguales, será que la diferencia de experiencia es parecida independientemente de quién gane y que por tanto no importa tener una ventaja de experiencia en la partida.
+
+Las hipótesis son: 
+
+$H_{0} : \mu_{1} = \mu_{2}$ ->  $\mu_{1} - \mu_{2} = 0$   
+$H_{1} : \mu_{1} \neq \mu_{2}$  ->  $\mu_{1} - \mu_{2} \neq 0$
 
 ```{r,eval=TRUE,echo=TRUE}
 
 t.test(gana$diferencia_exp, pierde$diferencia_exp, alternative = "two.sided")
+intervalo2<-t.test(gana$diferencia_exp, pierde$diferencia_exp, alternative = "two.sided")$conf.int
+
 
 ```
 
+Vemos que el p-valor es 2.2e-16, es decir, muy pequeño. Esto significa que hemos de rechazar la hipótesis nula y no podemos rechazar la hipótesis alternativa. Por tanto **la media de diferencia de experiencia cuando gana el equipo azul, es diferente a cuando gana el equipo rojo**. Este resultado es lógico puesto que la variable ha superado el filtro de correlación, y por tanto ya sabíamos que la diferencia de experiencia tenía una correlación positiva con el equipo azul para ganar. 
+
 
 #### 4.3.2.4 Contraste de diferencia de KDA entre posiciones para el equipo ganador.
+
+A continuación, **voy a estudiar un contraste de hipótesis entre más de dos grupos, concretamente la diferencia de KDA entre las diferentes posiciones, pero solo para el equipo ganador de la partida.**
+
+De esta manera, primero hemos de generar el dataset para estudiar esto. 
 
 ```{r,eval=TRUE,echo=TRUE}
 
@@ -1014,13 +1056,86 @@ colnames(variable)<-'kda'
 variable$posicion<-as.factor('sup')
 todos_kdas<-rbind(todos_kdas, variable)
 
+```
+
+Una vez se ha generado el dataset, con una variable que tiene el kda y otra la posición para los jugadores de los equipos que ganan. Vamos a estudiar la normalidad y la homocedasticidad de las variables. 
+
+```{r,eval=TRUE,echo=TRUE}
+
+shapiro.test(todos_kdas$kda)
+
+```
+
+Vemos que el shapiro test indica que el p-valor es muy pequeño, y por tanto, que la distribución de la variable no es normal. 
+Si estudiamos la distribución mediante un histograma:
+
+
+```{r,eval=TRUE,echo=TRUE, fig.height=3, fig.width=8}
+
+plot_hist_2<-function(x)
+{
+  print(ggplot(data=todos_kdas, aes(x=unlist(todos_kdas[x]))) +
+  geom_histogram(
+                 col="red",
+                 fill="green",
+                 alpha = .2) +
+  labs(title=paste0("Histograma de ",x)) +
+  labs(x=x, y="Frecuencia"))
+}
+
+plot_hist_2('kda')
+```
+
+Vemos que claramente, la distribución no es normal ya que podría ser una distribución desviada hacía los valores menores. Donde evidentemente, vemos como los valores que más aparacen para los kda de los equipos ganadores están entre 3 y 9.
+
+A continuación estudiamos la varianza mediante un test de fligner para estudiar si hay homocedasticidad de las varianzas. 
+
+```{r,eval=TRUE,echo=TRUE}
+
+fligner.test(kda ~ posicion, data = todos_kdas)
+
+```
+
+Vemos que el p-valor es menor de 0.05, por tanto podemos concluir que no hay homocedasticidad entre las varianzas de kda en función de la posición de cada jugador. 
+
+Debido a estos resultados, vamos a estudiar si la distribución del kda a lo largo de las diferentes posiciones es la misma para los equipos que ganan. Y lo realizamos con un kruskal.test, que es un test no paramétrico. 
+
+El test de Kruskal-Wallis, es un test no paramétrico con las siguientes hipotesis: 
+$H_{0} :$ Las 5 distribuciones vienen de la misma población.
+$H_{1} :$ Las 5 distribuciones NO vienen de la misma población.
+
+```{r,eval=TRUE,echo=TRUE}
 
 kruskal.test(kda ~ posicion, data = todos_kdas)
 
-pairwise.wilcox.test(x = todos_kdas$kda, g = todos_kdas$posicion,p.adjust.method = "holm" )
 ```
 
+Al obtener un p-valor tan inferior a 0.05 podemos concluir con un 95% de confianza que rechazamos la hipótesis nula y se acepta la hipótesis alternativa. **Por tanto, las 5 distribuciones de KDA en función de la posición del jugador no vienen de la misma población. Es decir, que las distribuciones son diferentes.**
+
+Una vez hemos obtenido esto, puede ser interesante estudiar las diferencias en función de los grupos de KDA por posición, para encontrar que distribución de KDA es significativamente diferente respecto a las otras. 
+
+Para ello se puede realizar un pairwise wilcoxon test, donde nos proporciona un p-valor para cada combinación de grupo de KDA en función de la posición. 
+
+```{r,eval=TRUE,echo=TRUE}
+
+
+pairwise.wilcox.test(x = todos_kdas$kda, g = todos_kdas$posicion )
+
+```
+
+Vemos como el kda del top, es significativamente diferente respecto a los otros, igual que ocurre para el adc (utilizando una significancia del 95%). Por otro lado, el jng no es significativamente diferente ni a mid ni a sup, pero entre mid y sup si que son significativamente diferentes. De hecho, si vemos por el p-valor, el mid está tiene un p-valor mayor para igualdad con el adc que con el sup. 
+
+**Por tanto, aplicando la lógica, el kda del top es significativamente inferior que el resto, el del adc significativamente superior. El del jungla no se diferencia significativamente del mid ni del support, pero el mid sí que del support, pareciendose más al del adc. Por tanto, un orden lógico derivado de estos p-valores es:**
+**top<sup<=jng<=mid<adc**
+
+
 ### 4.3.3 Regresión logística para predecir que equipo gana.
+
+Ahora que ya hemos realizado varios contrastes de hipótesis y conocemos un poco más sobre el dataset y sus comparaciones, **podemos desarrollar un modelo de regresión logística para predecir el ganador de la partida.** 
+
+Vamos a hacer por tanto un modelo supervisado, con su conjunto de entrenamiento y test, donde la variable objetivo sea gana_azul, y el resto de variables sean variables independientes en el modelo.
+
+Primero hay que subdividir el dataset en entrenamiento y test: 
 
 ```{r,eval=TRUE,echo=TRUE}
 require(caret)
@@ -1042,15 +1157,170 @@ Train <- lol_imputed_onehot[ trainIndex,]
 Test  <- lol_imputed_onehot[-trainIndex,]
 
 
+```
+
+A continuación se entrena el modelo y estudiamos su summary.
+
+```{r,eval=TRUE,echo=TRUE}
+
 glm_train<- glm(gana_azul ~ ., data=Train, family = "binomial")
 
 summary(glm_train)
 
+
+```
+
+Al ver el summary, vemos que la métrica AIC es muy pequeña, por lo tanto el ajuste del modelo a la variable objetivo es bastante bueno y además, que la desviación de residuales es ínfima. Eso sí, también se ha de comentar que se han realizado 25 iteraciones de Fisher, lo que indica junto con una desviación residual tan pequeña pero un AIC pequeño pero no de 0, que la complejidad del modelo es bastante grande respecto a la bondad del ajuste. 
+
+Esto también se puede apreciar en el p-valor de las variables. Y es que todos los p-valores son 1 o 0.999. Es decir, que el modelo puede hacer una predición buena, pero el coeficiente de regresión de las variables no es nada seguro. 
+En definitiva, esto se debe a que tenemos varias variables con una correación muy alta, algunas incluso casi separan perfectamente el ganador. 
+
+Realizo las predicciones del modelo para estudiar su desempeño, no estudio sus odds ratio porque los p-valores son todos de 1. Además obtengo su curva roc. 
+
+
+
+```{r,eval=TRUE,echo=TRUE}
+
+
+
+
 predicciones<- predict(glm_train,Test, type="response")
 predicciones <-as.factor(ifelse(predicciones>0.5,'si','no'))
 
-confmatrix<- confusionMatrix(predicciones,Test$gana_azul )
+confmatrix<- confusionMatrix(predicciones,Test$gana_azul, positive = 'si' )
 confmatrix
+
+
+
+```
+
+Al estudiar los resultados del modelo y su matriz de confianza, vemos como el acierto es altísimo en el conjunto de test, de un 97.6% de acierto, con una sensitividad del 98.17 para predecir si el equipo azul gana la partida. En total se equivoca solo en 5 partidas de las más de 200 del conjunto de test.
+
+Por tanto, hemos obtenido un modelo muy bueno para predecir, pero que no podemos estudiar sus odds ratio, y por tanto no podemos estudiar las variables que influyen en esta predicción. 
+
+
+
+#### 4.3.3.1 Regresión logística para identificar los factores que influyen en la victoria de un equipo.
+
+Para poder estudiar las variables que influyen en la predicción, voy de nuevo a realizar una regresión logística donde en vez de predecir si gana el equipo azul o rojo, se predice si un equipo gana o pierde, convirtiendo el dataset a un dataset más sencillo, con menos variables, donde cada instancia son los valores de un equipo.   
+
+Generamos este dataset y hago la partición en train y test: 
+
+```{r,eval=TRUE,echo=TRUE}
+
+azul<-lol_imputed_onehot %>% dplyr::select(contains("azul")| contains("exp")| contains("diff")) 
+colnames(azul)<-str_replace(colnames(azul),'_azul','')
+rojo<-lol_imputed_onehot %>% dplyr::select(contains("rojo")| contains("gana") | contains("exp")| contains("diff")) 
+colnames(rojo)<-str_replace(colnames(rojo),'_rojo','')
+colnames(rojo)<-str_replace(colnames(rojo),'_azul','')
+rojo$gana<- ifelse(rojo$gana == 'si', 'no', 'si')
+rojo$diferencia_exp<- -(rojo$diferencia_exp)
+rojo$diff_oro_al_15<- -(rojo$diff_oro_al_15)
+
+
+equipos <-rbind(azul, rojo)
+
+set.seed(42)
+trainIndex <- createDataPartition(equipos$gana, p = .66, 
+                                  list = FALSE, 
+                                  times = 1)
+
+Train2 <- equipos[ trainIndex,]
+Test2  <- equipos[-trainIndex,]
+```
+
+Ahora genero el modelo y estudio su summary. 
+
+```{r,eval=TRUE,echo=TRUE}
+
+glm_train2<- glm(gana ~ ., data=Train2, family = "binomial")
+
+summary(glm_train2)
+
+```
+ 
+Ahora vemos que aunque la bondad del ajuste no es tan buena como antes, ya que el AIC y la desviación de residuales son mayores, la diferencia entre ellos no es tán grande y las iteraciones de Fisher son solo 10. Por lo que ahora la bondad ha disminuido, pero la complejidad del modelo ha disminuido mucho, hasta el punto de que ahora es interpretable. 
+
+En el summary podemos ver como los p-valores ya no son de 1, y que hay varias variables que salen significativas, estas variables son el número de torres, el kda del adc, el kda del jng, el kda del sup y el kda del top. 
+Eso significa que el número de torres conseguido y el kda de adc, jng, sup y top es muy influyente en la partida, y por tanto para asegurarse una victoria tendremos que centrarnos en estas variables. 
+
+De esta manera, estas variables son las que sin duda influyen en la predicción de manera significativa. Pero aun así, podemos estudiar los odds ratio de todas las variables. Esto lo realizamos en el punto 5. 
+Ahora, realizo las predicciones del modelo para evaluar si ha disminuido mucho la capacidad de acierto sobre el conjunto de test. 
+
+```{r,eval=TRUE,echo=TRUE}
+
+
+predicciones<- predict(glm_train2,Test2, type="response")
+predicciones <-as.factor(ifelse(predicciones>0.5,'si','no'))
+
+confmatrix<- confusionMatrix(predicciones,Test2$gana , positive = 'si' )
+confmatrix
+
+```
+
+Vemos como el acierto del modelo es de 96.88%, menos de un punto de diferencia con el modelo anterior, pero en este caso con este modelo hemos podido identificar que variables son las más influyentes en la predicción del modelo. El modelo por tanto es muy bueno en identificar si un equipo va a ganar independientemente de lo que ha conseguido el equipo contrario. 
+
+
+# 5. Representación de los resultados a partir de tablas y gráficas. 
+
+Ya hemos realizado muchos análisis estadísticos, pero ahora es importante representar los resultados obtenidos en gráficas y tablas. 
+
+Es importante destacar que los gráficos para las variables del dataset final, que hacen referencia a la distribución de la variables y que son útiles para el análisis estadístico descriptivo ya se han realizado en el punto 4. A continuación desarrollo los gráficos para el resto de puntos. 
+
+Por otra parte, en este punto se incluyen los gráficos referentes a los contrastes de hipótesis realizados, y a los odds ratio y curvas ROC de la regresiones logísticas.
+
+## 5.1 Compración distribución de la variable DamageObjectivos_azul en función del grupo gana_azul
+
+```{r,eval=TRUE,echo=TRUE}
+# 
+# lol_imputed_onehot$gana_azul<-factor(lol_imputed_onehot$gana_azul, levels = rev(levels(lol_imputed_onehot$gana_azul)))
+
+lol_imputed_onehot %>% 
+  ggplot(aes(x=DamageObjectives_azul, fill =gana_azul )) +
+  geom_histogram(color="black", alpha=0.7, position = 'identity')+
+  geom_vline(xintercept = median(gana$DamageObjectives_azul), color='blue', size=1)+
+  geom_text(aes(x=median(gana$DamageObjectives_azul), label="\nMediana cuando gana azul", y=15), colour="blue", angle=90, text=element_text(size=9)) +
+  geom_vline(xintercept = median(pierde$DamageObjectives_azul), color='red', size=1)+
+  geom_text(aes(x=median(pierde$DamageObjectives_azul), label="Mediana cuando pierde azul\n", y=15), colour="red", angle=90, text=element_text(size=9)) +
+  geom_vline(xintercept = intervalo, color='black', size=1, alpha = 0.7)+
+  geom_text(aes(x=intervalo, label="                                  ->Limite inferior IC ", y=15), colour="black", angle=0, text=element_text(size=9)) 
+
+
+
+```
+
+## 5.2 Compración distribución de la variable diferencia_exp en función del grupo gana_azul
+
+
+```{r,eval=TRUE,echo=TRUE}
+
+
+lol_imputed_onehot %>% 
+  ggplot(aes(x=diferencia_exp, fill =gana_azul )) +
+  geom_histogram(color="black", alpha=0.7, position = 'identity')+
+  geom_vline(xintercept = median(gana$diferencia_exp), color='blue', size=1)+
+  geom_text(aes(x=median(gana$diferencia_exp), label="\nMediana cuando gana azul", y=15), colour="blue", angle=90, text=element_text(size=9)) +
+  geom_vline(xintercept = median(pierde$diferencia_exp), color='red', size=1)+
+  geom_text(aes(x=median(pierde$diferencia_exp), label="Mediana cuando pierde azul\n", y=15), colour="red", angle=90, text=element_text(size=9))
+  
+
+
+```
+
+## 5.3 Compración distribución de la variable kda en función de la posición
+
+```{r,eval=TRUE,echo=TRUE}
+
+todos_kdas %>% 
+  ggplot(aes(x=kda, fill =posicion )) +
+  geom_density(color="black", alpha=0.5, position = 'identity')
+
+```
+
+## 5.4 Curva ROC modelo de regresión para predecir que equipo gana (primera regresión)
+
+```{r,eval=TRUE,echo=TRUE}
+
 
 require(pROC)
 require(cvAUC)
@@ -1064,9 +1334,6 @@ ROCRpred <- prediction(prob, Test$gana_azul)
 # Se obtiene un objeto performance con el tpr y fpr
 ROCRperf <- performance(ROCRpred, 'tpr', 'fpr')
 
-# Se dibuja la curva roc
-plot(ROCRperf, colorize = TRUE, text.adj = c(-0.2, 1.7))
-
 # A partir del objeto prediction anterior, obtenemos la auc
 auc <- performance(ROCRpred, measure = "auc")
 
@@ -1074,55 +1341,29 @@ auc <- auc@y.values[[1]]
 
 print(paste0("El area bajo la curva ROC es de ", auc))
 
-
 ```
 
-#### 4.3.3.1 Regresión logística para identificar los factores que influyen en la victoria de un equipo.
+
+## 5.5 Odds ratio para la regresión para predecir si un equipo gana (segunda regresión)
+
 
 ```{r,eval=TRUE,echo=TRUE}
 
-azul<-lol_imputed_onehot %>% dplyr::select(contains("azul")| contains("exp")| contains("diff")) 
-colnames(azul)<-str_replace(colnames(azul),'_azul','')
-rojo<-lol_imputed_onehot %>% dplyr::select(contains("rojo")| contains("gana") | contains("exp")| contains("diff")) 
-colnames(rojo)<-str_replace(colnames(rojo),'_rojo','')
-colnames(rojo)<-str_replace(colnames(rojo),'_azul','')
-rojo$gana<- ifelse(rojo$gana == 'si', 'no', 'si')
+
+plot_model(glm_train2, show.values = TRUE, value.offset = .1,  title = "Odds ratio for step_model")
 
 
-equipos <-rbind(azul, rojo)
+```
 
+## 5.6 Curva ROC modelo de regresión para predecir si un equipo gana (segunda regresión)
 
-set.seed(42)
-trainIndex <- createDataPartition(equipos$gana, p = .66, 
-                                  list = FALSE, 
-                                  times = 1)
-
-Train <- equipos[ trainIndex,]
-Test  <- equipos[-trainIndex,]
-
-
-glm_train<- glm(gana ~ ., data=Train, family = "binomial")
-
-summary(glm_train)
-
-odds.ratio(glm_train)
-
-plot_model(glm_train, show.values = TRUE, value.offset = .1,  title = "Odds ratio for step_model")
-
-predicciones<- predict(glm_train,Test, type="response")
-predicciones <-as.factor(ifelse(predicciones>0.5,'si','no'))
-
-confmatrix<- confusionMatrix(predicciones,Test$gana )
-confmatrix
-
-require(pROC)
-require(cvAUC)
+```{r,eval=TRUE,echo=TRUE}
 
 # Se obtiene la predicción de los bebés sobre si tienen bajo peso o no. 
-prob <- predict(glm_train,Test, type="response")
+prob <- predict(glm_train2,Test2, type="response")
 
 # Se obtiene un objeti de predicción que tiene información sobre los tp, tn, fp y fn. 
-ROCRpred <- prediction(prob, Test$gana)
+ROCRpred <- prediction(prob, Test2$gana)
 
 # Se obtiene un objeto performance con el tpr y fpr
 ROCRperf <- performance(ROCRpred, 'tpr', 'fpr')
@@ -1138,11 +1379,3 @@ auc <- auc@y.values[[1]]
 print(paste0("El area bajo la curva ROC es de ", auc))
 
 ```
-
-
-# 5. Representación de los resultados a partir de tablas y gráficas. 
-
-Es importante destacar que los gráficos para las variables del dataset final, que hacen referencia a la distribución de la variables y que son útiles para el análisis estadístico descriptivo ya se han realizado en el punto 4. A continuación desarrollo los gráficos para el resto de puntos. 
-
-
-
