@@ -1,4 +1,4 @@
-# Practica2_TCV
+# Lol professional games analysis
 
 IMPORTANTE, RECORDAR:
-Solo queda explicar dataset (apartado 1), explicar las graficas apartado 5, conclusiones apartado 6, comentar código (apartado 7)
+Queda actualizar esta wiki y comentar código.
