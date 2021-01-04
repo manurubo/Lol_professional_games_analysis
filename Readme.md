@@ -1,4 +1,4 @@
-# Lol professional games analysis
+# Lol professional games analysis (WIKI)
 
 # Descripción
 Este repositorio corresponde al código y resultados de la práctica 2 de Tipología y Ciclo de Vida de los Datos. En esta práctica se ha realizado un análisis de datos estadístico del dataset https://zenodo.org/record/4265268#.X_NXP9hKhPZ. El objetivo de este análisis es encontrar las variables más importantes para la victoria de una partida de LeagueOfLegends, encontrar diferencias estadísticas en el dataset, generar modelos de regresión logística para predecir el ganador y estudiar la influencia de las variables en ganar una partida. 
