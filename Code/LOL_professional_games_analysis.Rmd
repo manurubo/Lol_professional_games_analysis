@@ -58,7 +58,7 @@ Es importante mencionar que se guarda el dataset de datos recien cargado en el d
 
 
 ```{r,eval=TRUE,echo=TRUE}
-# Tenemos que tener el fichero en el mismo directorio que el codigo.
+
 fichero <- paste(getwd(),'../Data/Input/Lol_ProfessionalGames.csv', sep='/')
 fichero
 lol <- read.csv2(fichero,sep=',')
@@ -184,15 +184,18 @@ Antes de eliminar el equipo hay que cambiar el valor de las variables primera_sa
 
 ```{r,eval=TRUE,echo=TRUE}
 
-
+# codifico los factores correctamente
 lol$primera_sangre <- as.factor(ifelse(as.character(lol$primera_sangre) == as.character(lol$nombre_azul), 'azul','rojo'))
 lol$primera_torre <- as.factor(ifelse(as.character(lol$primera_torre) == as.character(lol$nombre_azul), 'azul','rojo'))
 
+# variables que voy a eliminar
 eliminar <- c('torneo','parte', 'fecha','semana', 'parche','nombre_rojo','nombre_azul', 'top_azul', 'jng_azul','mid_azul','adc_azul','sup_azul','top_rojo', 'jng_rojo','mid_rojo','adc_rojo','sup_rojo')
 
+# elimino variables
 lol<-lol %>% select(-(all_of(eliminar))) 
 lol<-lol %>% select(-(contains("ban")| contains("pick")| contains("summoner")))
 
+# demuestro el cambio en las variables
 head(lol) %>% select(c("primera_sangre", "primera_torre"))
 ```
 
@@ -209,7 +212,7 @@ Respecto a las variables de CSD.15_equipo_posicion, que representan la diferenci
 
 ```{r,eval=TRUE,echo=TRUE}
 
-
+# elimino variables y demuestro los cambios
 lol<-lol %>% select(-(contains("css_")| contains("cs_in_jung")| contains("CSD.15")))
 head(lol) %>% select(contains("CSM"))
 ```
@@ -222,6 +225,7 @@ Por otra parte, aunque el desempeño de un jugador es muy importante de estudiar
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# genero las variables de kda
 lol$kda_top_azul <- (lol$kills_top_azul+lol$assists_top_azul)/lol$deaths_top_azul
 lol$kda_jng_azul <- (lol$kills_jng_azul+lol$assists_jng_azul)/lol$deaths_jng_azul
 lol$kda_mid_azul <- (lol$kills_mid_azul+lol$assists_mid_azul)/lol$deaths_mid_azul
@@ -234,6 +238,7 @@ lol$kda_mid_rojo <- (lol$kills_mid_rojo+lol$assists_mid_rojo)/lol$deaths_mid_roj
 lol$kda_adc_rojo <- (lol$kills_adc_rojo+lol$assists_adc_rojo)/lol$deaths_adc_rojo
 lol$kda_sup_rojo <- (lol$kills_sup_rojo+lol$assists_sup_rojo)/lol$deaths_sup_rojo
 
+# genero variables asesinatos
 lol$solo_k_azul <- lol %>% select(contains("Solo_kills_azul"))%>% rowSums(na.rm = TRUE)
 lol$double_k_azul <- lol %>% select(contains("Double_kills_azul"))%>% rowSums(na.rm = TRUE)
 lol$triple_k_azul <- lol %>% select(contains("Triple_kills_azul"))%>% rowSums(na.rm = TRUE)
@@ -245,7 +250,7 @@ lol$triple_k_rojo <- lol %>% select(contains("Triple_kills_rojo"))%>% rowSums(na
 lol$quadra_k_rojo <- lol %>% select(contains("Quadra_kills_rojo"))%>% rowSums(na.rm = TRUE)
 lol$penta_k_rojo <- lol %>% select(contains("Penta_kills_rojo"))%>% rowSums(na.rm = TRUE)
 
-
+# elimino variables y demuestro los cambios
 lol<-lol %>% select(-(contains("kills")| contains("deaths")| contains("assists")))
 head(lol) %>% select(contains("kda")| contains("_k_"))
 
@@ -258,17 +263,22 @@ El oro es la estadística más importante del juego. Los asesinatos, los subdito
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# genero la variable gana
 lol$gana <- as.factor(ifelse(lol$gana_azul == 1, 'azul','rojo'))
 
+# transformo las variables de oro a número
 require(stringr)
 lol$num_oro_azul <- as.integer(str_replace(lol$num_oro_azul,'k',''))*1000
 lol$num_oro_rojo <- as.integer(str_replace(lol$num_oro_rojo,'k',''))*1000
+
+# genero la variable mas oro en función de que equipo acabo con más oro
 lol$mas_oro <- as.factor(ifelse(lol$num_oro_azul == lol$num_oro_rojo, 'iguales', ifelse(lol$num_oro_azul > lol$num_oro_rojo, 'mas_azul','mas_rojo') ))
 
+# muestro la tabla de quien gana en función del oro
 table(lol$mas_oro,lol$gana)
 
+# elimino las variables de oro final
 eliminar2 <- c('num_oro_azul','num_oro_rojo', 'mas_oro','gana_azul', 'gana_rojo')
-
 lol<-lol %>% select(-(all_of(eliminar2))) 
 
 ```
@@ -281,6 +291,7 @@ El oro de cada jugador no lo vamos a usar, porque aunque sea muy util, realmente
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# reformateo la variable de oro azul y rojo para generar el oro al 15
 oro_azul<-str_split(lol$oro_azul, ',')
 lol$oro_al_15_azul<-unlist(lapply(oro_azul, function(x) as.integer(str_replace(unlist(x)[3], " '15 min': ",''))))
 
@@ -291,6 +302,7 @@ lol$oro_al_15_rojo<-unlist(lapply(oro_rojo, function(x) as.integer(str_replace(u
 diferencia_oro<-str_split(lol$diferencia_oro_azul, ',')
 lol$diff_oro_al_15<-unlist(lapply(diferencia_oro, function(x) as.integer(str_replace(unlist(x)[3], " '15 min': ",''))))
 
+# genero las variables de masvalioso para cada equipo
 lol<-lol %>% mutate(MasValioso_azul = case_when(
     (GPM_azul_top >= GPM_azul_jng) & (GPM_azul_top >= GPM_azul_mid) & (GPM_azul_top >= GPM_azul_adc) & (GPM_azul_top >= GPM_azul_sup) ~ "top",
     (GPM_azul_jng >= GPM_azul_top) & (GPM_azul_jng >= GPM_azul_mid) & (GPM_azul_jng >= GPM_azul_adc) & (GPM_azul_jng >= GPM_azul_sup) ~ "jng",
@@ -309,7 +321,7 @@ lol<-lol %>% mutate(MasValioso_rojo = case_when(
 )
   
 
-
+# elimino variables y demuestro los cambios
 eliminar3 <- c('oro_azul','oro_rojo', 'diferencia_oro_azul','diferencia_oro_rojo')
 
 lol<-lol %>% select(-(all_of(eliminar3)))
@@ -326,12 +338,15 @@ Debido a que se pueden poner wards normales o de control de visión, además que
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# me quedo solo con los minutos en la fecha
 fecha <- str_split(lol$tiempo,':')
 lol$tiempo<-unlist(lapply(fecha, function(x) as.integer(unlist(x)[1])))
 
+# genero el scorevision por minuto
 lol<-lol %>% mutate(ScoreVision_azul = (Vision_Score_azul_top + Vision_Score_azul_jng + Vision_Score_azul_mid + Vision_Score_azul_adc + Vision_Score_azul_sup)/tiempo)
 lol<-lol %>% mutate(ScoreVision_rojo = (Vision_Score_rojo_top + Vision_Score_rojo_jng + Vision_Score_rojo_mid + Vision_Score_rojo_adc + Vision_Score_rojo_sup)/tiempo)
 
+# elimino variables y demuestro los cambios
 lol<-lol %>% select(-(contains("Wards")| contains("Vision_Score")| contains("VS")))
 head(lol) %>% select(contains("ScoreVision"))
 
@@ -353,7 +368,7 @@ Por último, el daño a torres se recoge obviamente en el número de torres elim
 
 
 
-
+# genero las variables que agrupan el daño por equipo por minuto
 lol<-lol %>% mutate(PhysicalDamageChampions_azul = (Physical_Damage_Champions_azul_top + Physical_Damage_Champions_azul_jng + Physical_Damage_Champions_azul_mid + Physical_Damage_Champions_azul_adc + Physical_Damage_Champions_azul_sup)/tiempo)
 lol<-lol %>% mutate(PhysicalDamageChampions_rojo = (Physical_Damage_Champions_rojo_top + Physical_Damage_Champions_rojo_jng + Physical_Damage_Champions_rojo_mid + Physical_Damage_Champions_rojo_adc + Physical_Damage_Champions_rojo_sup)/tiempo)
 lol<-lol %>% mutate(MagicDamageChampions_azul = (Magic_Damage_Champions_azul_top + Magic_Damage_Champions_azul_jng + Magic_Damage_Champions_azul_mid + Magic_Damage_Champions_azul_adc + Magic_Damage_Champions_azul_sup)/tiempo)
@@ -363,6 +378,7 @@ lol<-lol %>% mutate(TrueDamageChampions_rojo = (True_Damage_Champions_rojo_top +
 lol<-lol %>% mutate(DamageObjectives_azul = (Total_Damage_Objectives_azul_top + Total_Damage_Objectives_azul_jng + Total_Damage_Objectives_azul_mid + Total_Damage_Objectives_azul_adc + Total_Damage_Objectives_azul_sup)/tiempo)
 lol<-lol %>% mutate(DamageObjectives_rojo = (Total_Damage_Objectives_rojo_top + Total_Damage_Objectives_rojo_jng + Total_Damage_Objectives_rojo_mid + Total_Damage_Objectives_rojo_adc + Total_Damage_Objectives_rojo_sup)/tiempo)
 
+# elimino variables y demuestro los cambios
 lol<-lol %>% select(-(contains("Damage_Dealt")| contains("Damage_Objectives")| contains("Damage_Taken")| contains("Damage_Champions")| contains("DMG")| contains("Damage_towers")| contains("damage_Champios")))
 head(lol) %>% select(contains("DPM") | contains( "Damage"))
 
@@ -377,9 +393,11 @@ Como trabajamos con diferencia de experiencia entre cada jugador de cada posici�
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# genero las variables de diferencia de exp y nivel en el minuto 15
 lol<-lol %>% mutate(diferencia_exp = XPD.15_azul_top + XPD.15_azul_jng + XPD.15_azul_mid + XPD.15_azul_adc + XPD.15_azul_sup)
 lol<-lol %>% mutate(diferencia_nivel = LVLD.15_azul_top + LVLD.15_azul_jng + LVLD.15_azul_mid + LVLD.15_azul_adc + LVLD.15_azul_sup)
 
+# elimino variables y demuestro los cambios
 lol<-lol %>% select(-(contains("XPD.15")| contains("LVLD.15")))
 head(lol) %>% select(contains("exp")| contains( "nivel"))
 
@@ -393,11 +411,13 @@ El control de campeones es vital en muchas partidas, consiste en el tiempo que u
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# genero las variables de curacion y cc
 lol<-lol %>% mutate(cura_azul = (heal_azul_top + heal_azul_jng + heal_azul_mid + heal_azul_adc + heal_azul_sup)/tiempo)
 lol<-lol %>% mutate(cura_rojo = (heal_rojo_top + heal_rojo_jng + heal_rojo_mid + heal_rojo_adc + heal_rojo_sup)/tiempo)
 lol<-lol %>% mutate(cc_azul = (ccing_azul_top + ccing_azul_jng + ccing_azul_mid + ccing_azul_adc + ccing_azul_sup)/tiempo)
 lol<-lol %>% mutate(cc_rojo = (ccing_rojo_top + ccing_rojo_jng + ccing_rojo_mid + ccing_rojo_adc + ccing_rojo_sup)/tiempo)
 
+# elimino variables y demuestro los cambios
 lol<-lol %>% select(-(contains("ccing")| contains("heal")))
 head(lol) %>% select(contains("cura") | contains( "cc"))
 
@@ -411,10 +431,11 @@ Las variables jng_share_15 y jng_share, representan el porcentaje de monstruos d
 
 ```{r,eval=TRUE,echo=TRUE}
 
-
+# genero las variables de ventaja en jungla
 lol<-lol %>% mutate(ventaja_jung_15 = as.numeric(as.character(jng_share_15_azul)) - as.numeric(as.character(jng_share_15_rojo)))
 lol<-lol %>% mutate(ventaja_jung = as.numeric(as.character(jng_share_azul)) - as.numeric(as.character(jng_share_rojo)))
 
+# elimino variables y demuestro los cambios
 lol<-lol %>% select(-(contains("share")))
 head(lol) %>% select(contains("ventaja"))
 
@@ -441,7 +462,7 @@ También falla el tipo de las variables MasValiosoAzul y MasValiosoRojo, que apa
 
 ```{r,eval=TRUE,echo=TRUE}
 
-
+# cambio el tipo de las variables de CSM a número
 lol$CSM_azul_top <- as.numeric(as.character(lol$CSM_azul_top))
 lol$CSM_azul_jng <- as.numeric(as.character(lol$CSM_azul_jng))
 lol$CSM_azul_mid <- as.numeric(as.character(lol$CSM_azul_mid))
@@ -453,6 +474,7 @@ lol$CSM_rojo_mid <- as.numeric(as.character(lol$CSM_rojo_mid))
 lol$CSM_rojo_adc <- as.numeric(as.character(lol$CSM_rojo_adc))
 lol$CSM_rojo_sup <- as.numeric(as.character(lol$CSM_rojo_sup))
 
+# cambio el tipo de las variables de mas valioso a factor
 lol$MasValioso_azul<- as.factor(lol$MasValioso_azul)
 lol$MasValioso_rojo<- as.factor(lol$MasValioso_rojo)
 
@@ -520,6 +542,7 @@ Eso sí quiero estudiar porque se produce el NA en las variables de kda de los j
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# del dataset base, selecciono asesinatos, muertes y asistencias de los que tienen en na en el kda_adc_rojo
 lol_base[which(is.na(lol$kda_adc_rojo)),]$kills_adc_rojo
 lol_base[which(is.na(lol$kda_adc_rojo)),]$deaths_adc_rojo
 lol_base[which(is.na(lol$kda_adc_rojo)),]$assists_adc_rojo
@@ -532,7 +555,7 @@ Vemos que estos jugadores, no asesinaron, ni asistieron, ni fueron asesinados en
 ```{r,eval=TRUE,echo=TRUE}
 
 
-
+# corrijo los valores de kdas
 lol$kda_top_azul <- ifelse(is.na(lol$kda_top_azul), 0, lol$kda_top_azul)
 lol$kda_jng_azul <- ifelse(is.na(lol$kda_jng_azul), 0, lol$kda_jng_azul)
 lol$kda_mid_azul <- ifelse(is.na(lol$kda_mid_azul), 0, lol$kda_mid_azul)
@@ -545,6 +568,7 @@ lol$kda_mid_rojo <- ifelse(is.na(lol$kda_mid_rojo), 0, lol$kda_mid_rojo)
 lol$kda_adc_rojo <- ifelse(is.na(lol$kda_adc_rojo), 0, lol$kda_adc_rojo)
 lol$kda_sup_rojo <- ifelse(is.na(lol$kda_sup_rojo), 0, lol$kda_sup_rojo)
 
+# asigno NA a las primeras sangres que no están
 lol$First_Blood<-ifelse(lol$First_Blood=='',NA, as.character(lol$First_Blood))
 
 # Consigo el nombre de las variables con nulos
@@ -553,12 +577,13 @@ colnames(nulls) <- 'nulls'
 nulls$index <-rownames(nulls)
 vars_with_nulls<-nulls[which(nulls$nulls!=0),]$index
 
-
+# imputo los valores
 lol_imputed<-kNN(lol, k=3)
 
 # muestro que se han corregido los nulos. 
 sapply(lol_imputed[vars_with_nulls], function(x) sum(is.na(x)))
 
+# pongo el tipo de first_blood bien
 lol_imputed$First_Blood <- as.factor(as.character(lol_imputed$First_Blood))
 
 
@@ -574,8 +599,10 @@ Es importante destacar que los valores extremos, obviamente solo se pueden obten
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# selecciono las variables numéricas
 lol_numericas <- lol_imputed %>% select(where(is.numeric) | where(is.integer))
 
+# estudio sus outliers
 sapply(lol_numericas, function(x) boxplot.stats(x)$out)
 
 
@@ -589,10 +616,10 @@ Para ejemplicar como se ven los outliers de las variables en los boxplots, y ent
 ```{r,eval=TRUE,echo=TRUE,, fig.height=3, fig.width=3}
 
 
-
+# selecciono las variables de csms
 lol_csms <- lol_imputed %>% select(c('CSM_azul_top','CSM_azul_jng','CSM_azul_mid','CSM_azul_adc','CSM_azul_sup','CSM_rojo_top','CSM_rojo_jng','CSM_rojo_mid','CSM_rojo_adc','CSM_rojo_sup'))
 
-
+# estudio sus boxplot
 sapply(lol_csms, function(x) boxplot(x))
 
 
@@ -605,6 +632,7 @@ Para todas las variables de CSM, podemos ver que los outliers que se han identif
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# utilizo lol2 para generar bien los kdas
 lol2<-lol_base
 
 lista<-c('deaths_top_azul','deaths_jng_azul','deaths_mid_azul','deaths_adc_azul','deaths_sup_azul','deaths_top_rojo','deaths_jng_rojo','deaths_mid_rojo','deaths_adc_rojo','deaths_sup_rojo')
@@ -631,7 +659,7 @@ colnames(lol2) <- lista_kda_2
 
 lol[lista_kda_2]<- lol2
 
-
+# si hay infinito en lol, se coge el valor bien calculado, que está en la variable con 2_
 lol$kda_top_azul <- ifelse(lol$kda_top_azul == Inf, lol$`2_kda_top_azul`, lol$kda_top_azul)
 lol$kda_jng_azul <- ifelse(lol$kda_jng_azul == Inf, lol$`2_kda_jng_azul`, lol$kda_jng_azul)
 lol$kda_mid_azul <- ifelse(lol$kda_mid_azul == Inf, lol$`2_kda_mid_azul`, lol$kda_mid_azul)
@@ -690,13 +718,16 @@ Para tener todas las variables numéricas y poder hacer la medida de correlació
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# selecciono solo los valores, no la infor de imputacion
 lol_imputed<-lol_imputed[,1:ncol(lol)]
 
+# selecciono las variables binarias
 vars_2_niveles<-sapply(lol_imputed,function(x) length(levels(x))==2)
 vars_2_niveles<-names(vars_2_niveles[which(vars_2_niveles==TRUE)])
 print("Las variables binarias son: " )
 print(vars_2_niveles)
 
+# selecciono las variables con mas categorias
 vars_mas_niveles<-sapply(lol_imputed,function(x) length(levels(x))>2)
 vars_mas_niveles<-names(vars_mas_niveles[which(vars_mas_niveles==TRUE)])
 print("Las variables nominales son: " )
@@ -716,6 +747,7 @@ Para las variables nominales hay varias posibilidades, podemos mantenerlas como 
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# elimino las duplicadas
 lol_imputed_onehot <- as.data.frame(one_hot(as.data.table(lol_imputed)))
 lol_imputed_onehot$gana_rojo<-NULL
 lol_imputed_onehot$primera_sangre_rojo<-NULL
@@ -740,14 +772,18 @@ Entre variables numéricas, la correlación que se suele calcular es la correlac
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# selecciono el nombre de las variables menos la objetivo
 variables_a_correlacion<-c(colnames(lol_imputed_onehot %>% select(-'gana_azul')))
 
+# calculo las correlaciones de spearman
 correlaciones<-as.data.frame(sapply(lol_imputed_onehot[variables_a_correlacion], function(x) cor(x,lol_imputed_onehot$gana_azul, method='spearman')))
 
 colnames(correlaciones)<-'correlacion'
 
+# obtengo el valor absoluto de la correlacion
 correlaciones$correlacion_abs<-abs(correlaciones$correlacion)
 
+# las ordeno y selecciono solo aquellas que superan el limite
 correlaciones<-correlaciones[order(-correlaciones$correlacion_abs),]
 correlaciones_importantes<-correlaciones[which(correlaciones$correlacion_abs>0.5),]
 correlaciones_importantes %>% kable()
@@ -787,6 +823,7 @@ Vemos que la correlación de oro_al_15_azul y cura_azul está lejos del 0.5 sien
 Por último, si miramos las correlaciones vemos que las correlaciones de las variables derivadas de first_blood, MasValiosoAzul y MasValiosoRojo son muy bajas y están lejos del límite, por tanto está claro que pertenecer a una categoría de estas variables no es útil para determinar que equipo gano en la partida. 
 
 ```{r,eval=TRUE,echo=TRUE}
+
 require(tibble)
 correlaciones<-rownames_to_column(correlaciones, var = "variable") 
 correlaciones %>% filter(grepl('MasValioso|First_Blood', `variable`) )
@@ -800,7 +837,7 @@ La raiz cuadrada del coeficiente R2 de la regresión se puede usar como coeficie
 
 ```{r,eval=TRUE,echo=TRUE}
 
-
+# calculo las correlaciones de estas variables con la objetivo calculado el rcuadrado del modelo
 model.lm <- lm(lol_imputed_onehot$gana_azul ~ lol_imputed$First_Blood)
 paste0("El coeficiente de correlación de FirstBlood sería: ",sqrt(summary(model.lm)$r.squared))
 
@@ -819,6 +856,7 @@ Vemos que sin duda, la correlación de First_Blood por sí sola es superior a la
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# selecciono las variables importantes
 variables_importantes<-rownames(correlaciones_importantes)
 variables_importantes<-c(variables_importantes, 'oro_al_15_azul', 'cura_azul', 'gana_azul')
 
@@ -847,11 +885,14 @@ Por otra parte, para las variables que no son normales habrá que justificar si 
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# configuro los niveles de gana_azul correctamente de nuevo
 lol_imputed_onehot$gana_azul<-as.factor(ifelse(lol_imputed_onehot$gana_azul == 1, 'si','no'))
 lol_imputed_onehot$gana_azul <- factor(lol_imputed_onehot$gana_azul, levels=c("si", "no") )
 
+# selecciono un dataset solo con las variables numericas
 lol_numericas <- lol_imputed_onehot %>% select(where(is.numeric) | where(is.integer))
 
+# obtengo el p-valor del test de normalidad
 pvalores<-sapply(lol_numericas, function(x) shapiro.test(x)$p.value)
 
 print("Las variables con distribución normal y sus p-valores son:")
@@ -884,7 +925,7 @@ Es importante mencionar, que yo voy a obtener la homocedasticidad para las varia
 
 ```{r,eval=TRUE,echo=TRUE}
 
-
+# compruebo la homocedasticidad para las variables normales
 pvalores<-sapply(lol_numericas[normales], function(x) leveneTest(x ~ lol_imputed_onehot$gana_azul)$`Pr(>F)`[1])
 
 print("Las variables con distribución normal, tienen todas homocedasticidad porque sus p-valores son:")
@@ -892,6 +933,7 @@ pvalores[which(pvalores>=0.05)]
 
 normales_homocedasticidad<-names(pvalores[which(pvalores>=0.05)])
 
+# compruebo la homocedasticidad para las variables no normales
 pvalores<-sapply(lol_numericas[nonormales], function(x) fligner.test(x ~ lol_imputed_onehot$gana_azul)$p.value)
 
 print("Las variables sin distribución normal, que no tienen homocedasticidad y sus p-valores son:")
@@ -952,10 +994,11 @@ vars <- c('num_torres_azul', 'num_torres_rojo', 'DamageObjectives_azul','DamageO
 
 summary(lol_imputed_onehot[vars])
 
-
+# calculo el porcentaje de victorias en función del equipo
 gana_azul_porcentaje<-nrow(lol_imputed_onehot[which(lol_imputed_onehot$gana_azul=='si'), ])/nrow(lol_imputed_onehot)
 paste0("El equipo azul gana un ", round(gana_azul_porcentaje,3), " y el rojo un ", 1-round(gana_azul_porcentaje,3))
 
+# hago los plots de los histogramas
 invisible(sapply(vars[1:(length(vars)-1)],plot_hist))
 
 
@@ -1124,7 +1167,7 @@ $H_{1} : p_{gana_azul} > p_{gana_rojo}$ -> $p_{gana_azul} > 1/2$
 
 ```{r,eval=TRUE,echo=TRUE}
 
-
+# hago el test de proporciones
 prop.test( table(lol_imputed_onehot$gana_azul), conf.level=0.95, alternative = 'greater')
 
 
@@ -1151,9 +1194,11 @@ $H_{1} : P(x_{i} > y_{i}) > 0.5$
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# divido en dos datasets, el que gana el equipo azul y el que pierde
 gana<-lol_imputed_onehot[which(lol_imputed_onehot$gana_azul == 'si'),]
 pierde<-lol_imputed_onehot[which(lol_imputed_onehot$gana_azul == 'no'),]
 
+# hago el test no parametrico
 wilcox.test(gana$DamageObjectives_azul, pierde$DamageObjectives_azul, alternative = "greater", mu = 0,paired = FALSE, conf.int = 0.95)
 
 
@@ -1182,6 +1227,7 @@ $H_{1} : \mu_{1} \neq \mu_{2}$  ->  $\mu_{1} - \mu_{2} \neq 0$
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# hago el t test
 t.test(gana$diferencia_exp, pierde$diferencia_exp, alternative = "two.sided")
 
 
@@ -1198,7 +1244,7 @@ De esta manera, primero hemos de generar el dataset para estudiar esto.
 
 ```{r,eval=TRUE,echo=TRUE}
 
-
+# obtengo todos los kda en un dataset
 todos_kdas<-gana['kda_top_azul']
 colnames(todos_kdas)<-'kda'
 todos_kdas$posicion<-as.factor('top')
@@ -1254,6 +1300,7 @@ Una vez se ha generado el dataset, con una variable que tiene el kda y otra la p
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# hago el test de shapiro para comprobar la normalidad
 shapiro.test(todos_kdas$kda)
 
 ```
@@ -1284,6 +1331,7 @@ A continuación estudiamos la varianza mediante un test de fligner para estudiar
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# compruebo la homocedasticidad
 fligner.test(kda ~ posicion, data = todos_kdas)
 
 ```
@@ -1298,6 +1346,7 @@ $H_{1} :$ Las 5 distribuciones NO vienen de la misma población.
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# hago el kruskal test
 kruskal.test(kda ~ posicion, data = todos_kdas)
 
 ```
@@ -1310,7 +1359,7 @@ Para ello se puede realizar un pairwise wilcoxon test, donde nos proporciona un 
 
 ```{r,eval=TRUE,echo=TRUE}
 
-
+# compruebo diferencias entre distribuciones con el pairwise
 pairwise.wilcox.test(x = todos_kdas$kda, g = todos_kdas$posicion )
 
 ```
@@ -1337,9 +1386,10 @@ library(sjlabelled)
 library(sjmisc)
 require(MASS)
 
+# configuro correctamente el ganador
 lol_imputed_onehot$gana_azul <- factor(lol_imputed_onehot$gana_azul, levels=c("no", "si"))
 
-
+# divido el dataset en 66% para el entrenamiento y 33% para el test
 set.seed(42)
 trainIndex <- createDataPartition(lol_imputed_onehot$gana_azul, p = .66, 
                                   list = FALSE, 
@@ -1355,6 +1405,7 @@ A continuación se entrena el modelo y estudiamos su summary.
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# hago el modelo de regresión logistica
 glm_train<- glm(gana_azul ~ ., data=Train, family = "binomial")
 
 summary(glm_train)
@@ -1373,12 +1424,11 @@ Realizo las predicciones del modelo para estudiar su desempeño, no estudio sus 
 
 ```{r,eval=TRUE,echo=TRUE}
 
-
-
-
+# se hacen las predicciones para el test
 predicciones<- predict(glm_train,Test, type="response")
 predicciones <-as.factor(ifelse(predicciones>0.5,'si','no'))
 
+# calculo la matriz de confusion
 confmatrix<- confusionMatrix(predicciones,Test$gana_azul, positive = 'si' )
 confmatrix
 
@@ -1400,6 +1450,7 @@ Generamos este dataset y hago la partición en train y test:
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# genero el nuevo dataset con un equipo por instancia
 azul<-lol_imputed_onehot %>% dplyr::select(contains("azul")| contains("exp")| contains("diff")) 
 colnames(azul)<-str_replace(colnames(azul),'_azul','')
 rojo<-lol_imputed_onehot %>% dplyr::select(contains("rojo")| contains("gana") | contains("exp")| contains("diff")) 
@@ -1412,8 +1463,8 @@ rojo$diff_oro_al_15<- -(rojo$diff_oro_al_15)
 
 equipos <-rbind(azul, rojo)
 
+# divido el dataset
 set.seed(42)
-
 trainIndex <- createDataPartition(equipos$gana, p = .66, 
                                   list = FALSE, 
                                   times = 1)
@@ -1425,6 +1476,7 @@ Test2  <- equipos[-trainIndex,]
 Ahora genero el modelo y estudio su summary. 
 
 ```{r,eval=TRUE,echo=TRUE}
+#genero el nuevo modelo
 glm_train2<- glm(gana ~ ., data=Train2, family = "binomial")
 
 summary(glm_train2)
@@ -1442,10 +1494,11 @@ Ahora, realizo las predicciones del modelo para evaluar si ha disminuido mucho l
 
 ```{r,eval=TRUE,echo=TRUE}
 
-
+# hago las predicciones para el test
 predicciones<- predict(glm_train2,Test2, type="response")
 predicciones <-as.factor(ifelse(predicciones>0.5,'si','no'))
 
+# calculo la matriz de confianza
 confmatrix<- confusionMatrix(predicciones,Test2$gana , positive = 'si' )
 confmatrix
 
@@ -1468,7 +1521,7 @@ Hemos realizado un contraste de hipótesis de la variable DamageObjectivos_azul 
 
 ```{r,eval=TRUE,echo=TRUE}
 
-
+# plot de histograma
 lol_imputed_onehot %>% 
   ggplot(aes(x=DamageObjectives_azul, fill =gana_azul )) +
   geom_histogram(color="black", alpha=0.7, position = 'identity')+
@@ -1477,6 +1530,7 @@ lol_imputed_onehot %>%
   geom_vline(xintercept = median(pierde$DamageObjectives_azul), color='red', size=1)+
   geom_text(aes(x=median(pierde$DamageObjectives_azul), label="Mediana cuando pierde azul\n", y=15), colour="red", angle=90, text=element_text(size=9)) 
 
+# boxplot
 lol_imputed_onehot %>% 
   ggplot(aes(y=DamageObjectives_azul, x =gana_azul, fill=gana_azul)) +
   geom_boxplot(color="black", alpha=0.7, position = 'identity')
@@ -1495,7 +1549,7 @@ Hemos realizado un contraste de hipótesis de la variable diferencia_exp respect
 
 ```{r,eval=TRUE,echo=TRUE}
 
-
+# plot de histograma
 lol_imputed_onehot %>% 
   ggplot(aes(x=diferencia_exp, fill =gana_azul )) +
   geom_histogram(color="black", alpha=0.7, position = 'identity')+
@@ -1504,6 +1558,7 @@ lol_imputed_onehot %>%
   geom_vline(xintercept = mean(pierde$diferencia_exp), color='red', size=1)+
   geom_text(aes(x=median(pierde$diferencia_exp), label="Media cuando pierde azul\n", y=15), colour="red", angle=90, text=element_text(size=9))
   
+# boxplot
 lol_imputed_onehot %>% 
   ggplot(aes(y=diferencia_exp, x =gana_azul, fill=gana_azul)) +
   geom_boxplot(color="black", alpha=0.7, position = 'identity')
@@ -1526,10 +1581,12 @@ top<sup<=jng<=mid<adc
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# plot de densidad
 todos_kdas %>% 
   ggplot(aes(x=kda, fill =posicion )) +
   geom_density(color="black", alpha=0.5, position = 'identity')
 
+# boxplot
 todos_kdas %>% 
   ggplot(aes(y=kda, x =posicion, fill=posicion)) +
   geom_boxplot(color="black", alpha=0.5, position = 'identity')
@@ -1556,9 +1613,10 @@ Calculo el AUC ROC y grafico la curva visualmente
 require(pROC)
 require(cvAUC)
 
+# se obtiene la prediccion
 prob <- predict(glm_train,Test, type="response")
 
-# Se obtiene un objeti de predicción que tiene información sobre los tp, tn, fp y fn. 
+# Se obtiene un objeto de predicción que tiene información sobre los tp, tn, fp y fn. 
 ROCRpred <- prediction(prob, Test$gana_azul)
 
 # Se obtiene un objeto performance con el tpr y fpr
@@ -1589,10 +1647,9 @@ En principio, hemos visto mediante la matriz de confusión y las métricas de ac
 
 ```{r,eval=TRUE,echo=TRUE}
 
-# Se obtiene la predicción de los bebés sobre si tienen bajo peso o no. 
 prob <- predict(glm_train2,Test2, type="response")
 
-# Se obtiene un objeti de predicción que tiene información sobre los tp, tn, fp y fn. 
+# Se obtiene un objeto de predicción que tiene información sobre los tp, tn, fp y fn. 
 ROCRpred <- prediction(prob, Test2$gana)
 
 # Se obtiene un objeto performance con el tpr y fpr
@@ -1631,7 +1688,7 @@ Grafico el odds ratio de las variables del modelo y posteriormente estudio su in
 
 ```{r,eval=TRUE,echo=TRUE}
 
-
+# grafico de los odds ratio
 plot_model(glm_train2, show.values = TRUE, value.offset = .4, digits = 4,  title = "Odds ratio for step_model")
 
 
@@ -1695,6 +1752,7 @@ Además, guardo los datasets que se han ido generando derivados de este, ya sea 
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# guardo los datasets
 write.csv2(lol_imputed_onehot, '../Data/Output/lol_professional_games_final.csv', sep=',',row.names = FALSE)
 write.csv2(equipos, '../Data/Output/lol_professional_games_separated_teams.csv', sep=',',row.names = FALSE)
 write.csv2(gana, '../Data/Output/lol_professional_games_bluewins.csv', sep=',',row.names = FALSE)
@@ -1708,6 +1766,7 @@ write.csv2(todos_kdas, '../Data/Output/lol_professional_games_kdaofwinnerplayers
 
 ```{r,eval=TRUE,echo=TRUE}
 
+# genero la tabla de contribuciones
 data.frame(Contribuciones =c("Investigación previa", "Redacción de las respuestas", "Desarrollo código"), Firma = c("Manuel Ruiz Botella", "Manuel Ruiz Botella","Manuel Ruiz Botella")) %>% kable() %>% kable_styling()
 
 
